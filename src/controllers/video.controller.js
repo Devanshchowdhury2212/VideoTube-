@@ -5,6 +5,9 @@ import {apiError} from '../utils/apiError.js'
 import { video } from "../models/video.models.js";
 import { user } from "../models/user.models.js";
 import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/fileupload.js";
+import {subscription} from '../models/subcription.models.js'
+import {notificationQueue} from '../queue/notificationQueue.js'
+import {notificationWorker,publishNotification} from "../queue/notificationProcessor.js"
 
 //get all videos based on query, sort, pagination
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -57,6 +60,50 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
         }
     )
+    const contentCreator = req.user._id
+    let emails = ["devanshchowdhury@gmail.com"]
+    // try {
+    //     const result = await subscription.aggregate([
+    //       {
+    //         $match: { channel: mongoose.Types.ObjectId(contentCreator) },
+    //       },
+    //       {
+    //         $lookup: {
+    //           from: "users", 
+    //           localField: "subscriber",
+    //           foreignField: "_id",
+    //           as: "subscriberDetails",
+    //         },
+    //       },
+          
+    //       { $unwind: "$subscriberDetails" },
+          
+    //       {
+    //         $project: {
+    //           _id: 0,
+    //           email: "$subscriberDetails.email",
+    //         },
+    //       },
+    //     ]);
+    //     console.log("Result",result)
+    //     // Extract emails from the result array
+    //     emails = result.map((doc) => doc.email);
+    //   } catch (error) {
+    //     console.error("Error fetching subscriber emails:", error);
+    //     throw new apiError(400, "Subscriber Email Issue");;
+    //   }
+
+    try {
+        // console.log("List of EMAILS",emails)
+        for (const subscriberEmail of emails){
+            await publishNotification('sendEmail', "New Video Uploaded", subscriberEmail)
+        }
+    } catch (error) {
+        throw new apiError(400, "Failed to notify subscribers.",error);
+    }
+
+
+
     return res.status(201).json(
         new apiResponse(200,PublishVideo,"Video Published Succesfully") 
     )

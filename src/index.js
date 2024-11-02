@@ -44,7 +44,7 @@ const init = async () => {
 // Initialize connections and start the server
 init();
 
-
+export {}
 
 
 
